@@ -1,95 +1,99 @@
+'use client';
+
+import "./style.css";
+import "bootstrap/dist/css/bootstrap.min.css"; // Import bootstrap CSS
+import { useState } from "react";
 import Image from "next/image";
-import styles from "./page.module.css";
-
+import dark from '../../public/dark.png'
+import light from '../../public/light.png'
 export default function Home() {
+
+  const [query, setQuery] = useState({
+    text: ""
+  });
+  const [data, setData] = useState([]);
+  const [display, setDisplay] = useState(false);
+  const [theme,setTheme] = useState(false)
+
+  const handleOnChange = (e) => {
+    const { name, value } = e.target;
+    setQuery({ [name]: value });
+  }
+
+  const onSubmit = async (event) => {
+    event.preventDefault();
+    try {
+      const response = await fetch('http://localhost:5000/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'  // Specify content type as JSON
+        },
+        body: JSON.stringify(query)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data);
+        setData(data);
+        setDisplay(true);
+
+        if (data.prediction[0] === 0) {
+          document.querySelector('.resultLabel').style.color = 'green';
+        } else {
+          document.querySelector('.resultLabel').style.color = 'red';
+        }
+      } else {
+        console.error('Failed to get prediction:', response.status);
+      }
+    } catch (error) {
+      console.error('Error getting prediction:', error);
+    }
+  }
+
+  const switchTheme = () => {
+    if(theme){
+      setTheme(false)
+    }
+    else{
+      setTheme(true)
+    }
+    document.body.classList.toggle("light-theme");
+  }
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
+    <main className="main">
+         <div className="line">
+<Image
+      src={theme?light:dark}
+      alt=""
+      className='icon'
+      width={40}
+      onClick={switchTheme}
+      />
+    </div>
+      <h1>SQLI Detection</h1>
+      <div className="description">
+        <p>This platform is used for testing the model's ability to detect SQL injection attacks.</p>
+        <p>Please enter the SQL query in the text box below to detect if this query is a SQLi attack.</p>
       </div>
+      <h1>Enter SQL query</h1>
+      <form onSubmit={onSubmit}>
+        <label htmlFor="text">Enter SQL query here</label>
+        <input type={"text"} className="query" onChange={handleOnChange} name="text" />
+        <input type={"submit"}></input>
+        {
+          display ? <div className="result">
+            <h3>Your query is: {query.text}</h3>
+            <h3 className="resultLabel">{data.prediction[0] == 0 ?
+              "This is not a SQLi attack"
+              :
+              "This is a SQLi attack"
+            }</h3>
+          </div> : <></>
+        }
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+      </form>
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
     </main>
   );
 }
